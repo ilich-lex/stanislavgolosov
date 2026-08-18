@@ -812,7 +812,7 @@ h2 em {
 .contact-channels a span { font-size: 16px; font-weight: 650; }
 .contact-channels a i { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-style: normal; transition: transform .3s var(--ease); }
 .contact-channels a:hover i { transform: translate(3px, -3px); }
-.contact-channel-max > span, .contact-channel-max i { color: var(--accent-max-dark); }
+.contact-channel-whatsapp > span, .contact-channel-whatsapp i { color: var(--accent-deep); }
 .contact-address { display: grid; grid-column: 3 / 13; grid-template-columns: 2fr 5fr 2fr; align-items: center; gap: 30px; padding-top: 30px; border-top: 1px solid var(--ink); }
 .contact-address span { color: var(--ink-soft); font-size: 14px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
 .contact-address strong { font-size: clamp(17px, 1.6vw, 22px); font-weight: 520; }
