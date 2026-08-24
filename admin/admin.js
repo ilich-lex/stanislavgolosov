@@ -40,6 +40,16 @@
   const cancelCaseButton = document.querySelector('[data-cancel-case]');
   const adminCaseList = document.querySelector('[data-admin-case-list]');
   const casesState = document.querySelector('[data-cases-state]');
+  const addPriceButton = document.querySelector('[data-add-price]');
+  const priceEditor = document.querySelector('[data-price-editor]');
+  const priceForm = document.querySelector('[data-price-form]');
+  const priceFormTitle = document.querySelector('[data-price-form-title]');
+  const priceFormMessage = document.querySelector('[data-price-form-message]');
+  const savePriceButton = document.querySelector('[data-save-price]');
+  const closePriceEditorButton = document.querySelector('[data-close-price-editor]');
+  const cancelPriceButton = document.querySelector('[data-cancel-price]');
+  const adminPriceList = document.querySelector('[data-admin-price-list]');
+  const pricesState = document.querySelector('[data-prices-state]');
   const currentPhoto = document.querySelector('[data-current-photo]');
   const photoInput = document.querySelector('[data-photo-input]');
   const photoPreview = document.querySelector('[data-photo-preview]');
@@ -68,7 +78,9 @@
 
   const state = {
     cases: [],
+    prices: [],
     editingId: null,
+    editingPriceId: null,
     selectedFile: null,
     previewUrl: null,
     currentPortraitPath: null,
@@ -193,7 +205,7 @@
     }
 
     showAdmin();
-    await Promise.all([loadCases(), loadCurrentPhoto()]);
+    await Promise.all([loadCases(), loadCurrentPhoto(), loadPrices()]);
     return true;
   };
 
@@ -447,6 +459,145 @@
     await loadCases();
   }
 
+  const normalizePriceForm = () => {
+    const formData = new FormData(priceForm);
+    const title = String(formData.get('title') || '').trim();
+    const price = String(formData.get('price') || '').trim();
+    const sortOrderValue = Number(formData.get('sort_order'));
+
+    if (!title || title.length > 160) {
+      throw new Error('Укажите название услуги длиной до 160 символов.');
+    }
+    if (!price || price.length > 80) {
+      throw new Error('Укажите цену длиной до 80 символов.');
+    }
+    if (!Number.isInteger(sortOrderValue) || sortOrderValue < -100000 || sortOrderValue > 100000) {
+      throw new Error('Порядок должен быть целым числом от −100000 до 100000.');
+    }
+
+    return {
+      title,
+      price,
+      sort_order: sortOrderValue,
+      is_featured: formData.get('is_featured') === 'on',
+      is_published: formData.get('is_published') === 'on'
+    };
+  };
+
+  const resetPriceForm = () => {
+    state.editingPriceId = null;
+    priceForm.reset();
+    priceForm.elements.id.value = '';
+    priceForm.elements.sort_order.value = '100';
+    priceForm.elements.is_featured.checked = false;
+    priceForm.elements.is_published.checked = true;
+    priceFormTitle.textContent = 'Новая позиция';
+    setMessage(priceFormMessage);
+  };
+
+  const openPriceEditor = (item = null) => {
+    resetPriceForm();
+
+    if (item) {
+      state.editingPriceId = item.id;
+      priceForm.elements.id.value = item.id;
+      priceForm.elements.title.value = item.title;
+      priceForm.elements.price.value = item.price;
+      priceForm.elements.sort_order.value = String(item.sort_order);
+      priceForm.elements.is_featured.checked = item.is_featured;
+      priceForm.elements.is_published.checked = item.is_published;
+      priceFormTitle.textContent = 'Редактировать позицию';
+    }
+
+    priceEditor.hidden = false;
+    priceForm.elements.title.focus({ preventScroll: true });
+    priceEditor.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start'
+    });
+  };
+
+  const closePriceEditor = () => {
+    priceEditor.hidden = true;
+    resetPriceForm();
+  };
+
+  const renderPrices = () => {
+    adminPriceList.replaceChildren();
+
+    if (!state.prices.length) {
+      pricesState.textContent = 'Позиций пока нет. Добавьте первую услугу и цену.';
+      pricesState.hidden = false;
+      return;
+    }
+
+    pricesState.hidden = true;
+    const fragment = document.createDocumentFragment();
+
+    state.prices.forEach((item) => {
+      const card = makeElement('article', 'admin-case-card admin-price-card');
+      const content = makeElement('div', 'case-card-content');
+      const title = makeElement('h3', '', item.title);
+      const price = makeElement('p', 'price-card-value', item.price);
+      const meta = makeElement('div', 'case-card-meta');
+      const order = makeElement('span', '', `Порядок: ${item.sort_order}`);
+      const updated = makeElement('span', '', `Обновлено: ${formatDate(item.updated_at)}`);
+      const status = makeElement('span', `case-card-status${item.is_published ? '' : ' is-draft'}`, item.is_published ? 'Опубликовано' : 'Скрыто');
+      const actions = makeElement('div', 'case-card-actions');
+      const edit = makeElement('button', 'admin-button admin-button-quiet', 'Редактировать');
+      const remove = makeElement('button', 'admin-button admin-button-danger', 'Удалить');
+
+      if (item.is_featured) meta.append(makeElement('span', 'case-card-status', 'Акцентная позиция'));
+      edit.type = 'button';
+      remove.type = 'button';
+      edit.addEventListener('click', () => openPriceEditor(item));
+      remove.addEventListener('click', () => deletePrice(item));
+      meta.prepend(order, updated, status);
+      content.append(title, price, meta);
+      actions.append(edit, remove);
+      card.append(content, actions);
+      fragment.append(card);
+    });
+
+    adminPriceList.append(fragment);
+  };
+
+  async function loadPrices() {
+    pricesState.hidden = false;
+    pricesState.textContent = 'Загружаем прайс-лист…';
+    adminPriceList.replaceChildren();
+
+    const { data, error } = await client
+      .from('price_items')
+      .select('id,title,price,sort_order,is_featured,is_published,created_at,updated_at')
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      pricesState.textContent = 'Не удалось загрузить прайс-лист. Проверьте подключение и попробуйте обновить страницу.';
+      showToast('Ошибка загрузки прайс-листа.', true);
+      return;
+    }
+
+    state.prices = Array.isArray(data) ? data : [];
+    renderPrices();
+  }
+
+  async function deletePrice(item) {
+    const confirmed = window.confirm(`Удалить позицию «${item.title}»? Это действие нельзя отменить.`);
+    if (!confirmed) return;
+
+    const { error } = await client.from('price_items').delete().eq('id', item.id);
+    if (error) {
+      showToast('Не удалось удалить позицию. Попробуйте ещё раз.', true);
+      return;
+    }
+
+    showToast('Позиция удалена. Публичный сайт обновится автоматически.');
+    if (state.editingPriceId === item.id) closePriceEditor();
+    await loadPrices();
+  }
+
   const getPublicPhotoUrl = (path) => {
     if (!path || path.includes('..') || !path.startsWith(`${config.portraitFolder}/`)) return null;
     const { data } = client.storage.from(config.portraitBucket).getPublicUrl(path);
@@ -697,6 +848,7 @@
     await client.auth.signOut();
     logoutButton.disabled = false;
     closeCaseEditor();
+    closePriceEditor();
     clearSelectedPhoto();
     closePasswordPanel();
   });
@@ -750,6 +902,41 @@
     closeCaseEditor();
     setButtonBusy(saveCaseButton, false, 'Сохраняем…', 'Сохранить');
     await loadCases();
+  });
+
+  addPriceButton.addEventListener('click', () => openPriceEditor());
+  closePriceEditorButton.addEventListener('click', closePriceEditor);
+  cancelPriceButton.addEventListener('click', closePriceEditor);
+
+  priceForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    setMessage(priceFormMessage);
+    let payload;
+
+    try {
+      payload = normalizePriceForm();
+    } catch (error) {
+      setMessage(priceFormMessage, error.message);
+      return;
+    }
+
+    const editing = Boolean(state.editingPriceId);
+    setButtonBusy(savePriceButton, true, 'Сохраняем…', 'Сохранить');
+    const query = editing
+      ? client.from('price_items').update(payload).eq('id', state.editingPriceId)
+      : client.from('price_items').insert(payload);
+    const { error } = await query.select('id').single();
+
+    if (error) {
+      setMessage(priceFormMessage, 'Не удалось сохранить позицию. Проверьте данные и попробуйте ещё раз.');
+      setButtonBusy(savePriceButton, false, 'Сохраняем…', 'Сохранить');
+      return;
+    }
+
+    showToast(editing ? 'Изменения сохранены.' : 'Позиция добавлена.');
+    closePriceEditor();
+    setButtonBusy(savePriceButton, false, 'Сохраняем…', 'Сохранить');
+    await loadPrices();
   });
 
   photoInput.addEventListener('change', () => {

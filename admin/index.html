@@ -8,7 +8,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://phflcjspzmyovdplsdze.supabase.co; connect-src 'self' https://phflcjspzmyovdplsdze.supabase.co wss://phflcjspzmyovdplsdze.supabase.co; base-uri 'none'; form-action 'self'; object-src 'none'">
   <title>Управление сайтом — Станислав Голосов</title>
   <link rel="icon" type="image/png" href="../assets/icons/favicon.png">
-  <link rel="stylesheet" href="admin.css?v=2">
+  <link rel="stylesheet" href="admin.css?v=3">
 </head>
 <body>
   <a class="skip-link" href="#admin-main">Перейти к содержанию</a>
@@ -23,7 +23,7 @@
         <div class="login-panel" data-login-panel>
           <p class="eyebrow">Закрытый раздел</p>
           <h1>Управление сайтом</h1>
-          <p class="login-intro">Войдите, чтобы обновить судебную практику или фотографию.</p>
+          <p class="login-intro">Войдите, чтобы обновить судебную практику, фотографию или прайс-лист.</p>
 
           <form class="login-form" data-login-form novalidate>
             <label>
@@ -126,6 +126,7 @@
         <nav class="admin-tabs" aria-label="Разделы управления">
           <button type="button" class="admin-tab is-active" data-tab="cases" aria-selected="true">Судебная практика</button>
           <button type="button" class="admin-tab" data-tab="photo" aria-selected="false">Фотография</button>
+          <button type="button" class="admin-tab" data-tab="prices" aria-selected="false">Прайс-лист</button>
         </nav>
 
         <section class="admin-panel" data-panel="cases" aria-labelledby="cases-heading">
@@ -217,6 +218,58 @@
             </section>
           </div>
         </section>
+
+        <section class="admin-panel" data-panel="prices" aria-labelledby="prices-heading" hidden>
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Услуги и цены</p>
+              <h2 id="prices-heading">Прайс-лист</h2>
+              <p>Позиции отображаются на сайте в установленном здесь порядке. Цена может содержать текст, например «от 5 000 ₽».</p>
+            </div>
+            <button class="admin-button admin-button-primary" type="button" data-add-price>+ Добавить позицию</button>
+          </div>
+
+          <div class="case-editor" data-price-editor hidden>
+            <div class="editor-heading">
+              <h3 data-price-form-title>Новая позиция</h3>
+              <button class="icon-button" type="button" data-close-price-editor aria-label="Закрыть форму">×</button>
+            </div>
+            <form data-price-form novalidate>
+              <input type="hidden" name="id">
+              <div class="form-grid">
+                <label class="field">
+                  <span>Название услуги <b aria-hidden="true">*</b></span>
+                  <input type="text" name="title" maxlength="160" required>
+                </label>
+                <label class="field">
+                  <span>Порядок</span>
+                  <input type="number" name="sort_order" min="-100000" max="100000" step="1" value="100">
+                  <small>Меньшее число показывается выше.</small>
+                </label>
+                <label class="field field-wide">
+                  <span>Цена <b aria-hidden="true">*</b></span>
+                  <input type="text" name="price" maxlength="80" placeholder="от 5 000 ₽" required>
+                </label>
+                <label class="check-field field-wide">
+                  <input type="checkbox" name="is_featured">
+                  <span>Выделить позицию акцентным цветом</span>
+                </label>
+                <label class="check-field field-wide">
+                  <input type="checkbox" name="is_published" checked>
+                  <span>Показывать позицию на сайте</span>
+                </label>
+              </div>
+              <p class="form-message" data-price-form-message aria-live="polite"></p>
+              <div class="form-actions">
+                <button class="admin-button admin-button-primary" type="submit" data-save-price>Сохранить</button>
+                <button class="admin-button admin-button-quiet" type="button" data-cancel-price>Отмена</button>
+              </div>
+            </form>
+          </div>
+
+          <p class="panel-state" data-prices-state aria-live="polite">Загружаем прайс-лист…</p>
+          <div class="admin-case-list admin-price-list" data-admin-price-list></div>
+        </section>
       </div>
 
       <div class="toast" data-toast role="status" aria-live="polite" hidden></div>
@@ -225,6 +278,6 @@
 
   <script src="../assets/vendor/supabase-2.112.3.js" defer></script>
   <script src="../cms-config.js?v=1" defer></script>
-  <script src="admin.js?v=2" defer></script>
+  <script src="admin.js?v=3" defer></script>
 </body>
 </html>

@@ -226,6 +226,7 @@ input:focus { border-color: var(--max); outline: 3px solid rgba(63,112,159,.18);
 .case-card-status.is-draft { color: var(--ink-soft); background: rgba(82,97,104,.1); }
 .case-card-actions { display: flex; align-items: start; gap: 8px; }
 .case-card-actions .admin-button { min-height: 44px; padding-inline: 14px; }
+.admin-price-card .price-card-value { margin-top: 10px; color: var(--ink); font-family: var(--serif); font-size: clamp(22px, 2.6vw, 30px); line-height: 1.15; overflow-wrap: anywhere; }
 
 .photo-layout { display: grid; grid-template-columns: minmax(260px, .8fr) minmax(320px, 1.2fr); gap: clamp(28px, 6vw, 72px); align-items: start; }
 .photo-current, .photo-replace { padding-top: 24px; border-top: 1px solid var(--ink); }

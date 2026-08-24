@@ -7,6 +7,7 @@
   const caseStatus = document.querySelector('[data-case-status]');
   const portrait = document.querySelector('[data-cms-portrait]');
   const portraitSource = document.querySelector('[data-cms-portrait-source]');
+  const priceList = document.querySelector('[data-price-list]');
 
   if (!config || !config.supabaseUrl || !config.supabasePublishableKey) return;
 
@@ -241,6 +242,53 @@
     }
   };
 
+  const normalizePriceItem = (item) => {
+    if (!item || typeof item !== 'object') return null;
+    const title = String(item.title || '').trim();
+    const price = String(item.price || '').trim();
+
+    if (!title || title.length > 160 || !price || price.length > 80) return null;
+    return {
+      title,
+      price: price.replace(/\s+₽/g, '\u00a0₽'),
+      isFeatured: item.is_featured === true
+    };
+  };
+
+  const createPriceRow = (item, index) => {
+    const row = document.createElement('li');
+    const ordinal = document.createElement('span');
+    const title = document.createElement('h3');
+    const price = document.createElement('strong');
+
+    if (item.isFeatured) row.classList.add('price-main');
+    row.dataset.reveal = 'price-row';
+    row.classList.add('is-visible');
+    ordinal.textContent = String(index + 1).padStart(2, '0');
+    title.textContent = item.title;
+    price.textContent = item.price;
+    row.append(ordinal, title, price);
+    return row;
+  };
+
+  const loadPriceList = async () => {
+    if (!priceList) return;
+    priceList.setAttribute('aria-busy', 'true');
+
+    try {
+      const select = 'id,title,price,sort_order,is_featured';
+      const result = await requestJson(`price_items?select=${select}&is_published=eq.true&order=sort_order.asc,created_at.asc`);
+      if (!Array.isArray(result.data)) throw new Error('Invalid price response');
+      const items = result.data.map(normalizePriceItem).filter(Boolean);
+      if (items.length !== result.data.length) throw new Error('Invalid price item');
+      priceList.replaceChildren(...items.map(createPriceRow));
+    } catch {
+      // The original HTML price list remains visible when the API is unavailable.
+    } finally {
+      priceList.removeAttribute('aria-busy');
+    }
+  };
+
   if (caseList && moreButton) {
     setupFallback();
     moreButton.addEventListener('click', () => {
@@ -251,4 +299,5 @@
   }
 
   loadPortrait();
+  loadPriceList();
 })();
