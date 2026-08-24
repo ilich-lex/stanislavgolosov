@@ -8,7 +8,26 @@
   const loginForm = document.querySelector('[data-login-form]');
   const loginMessage = document.querySelector('[data-login-message]');
   const loginSubmit = document.querySelector('[data-login-submit]');
+  const loginPanel = document.querySelector('[data-login-panel]');
+  const resetPanel = document.querySelector('[data-reset-panel]');
+  const resetForm = document.querySelector('[data-reset-form]');
+  const resetMessage = document.querySelector('[data-reset-message]');
+  const resetSubmit = document.querySelector('[data-reset-submit]');
+  const openResetButton = document.querySelector('[data-open-reset]');
+  const backLoginButton = document.querySelector('[data-back-login]');
+  const recoveryPanel = document.querySelector('[data-recovery-panel]');
+  const recoveryForm = document.querySelector('[data-recovery-form]');
+  const recoveryMessage = document.querySelector('[data-recovery-message]');
+  const recoverySubmit = document.querySelector('[data-recovery-submit]');
+  const recoveryLoginButton = document.querySelector('[data-recovery-login]');
   const logoutButton = document.querySelector('[data-logout]');
+  const openPasswordButton = document.querySelector('[data-open-password]');
+  const passwordPanel = document.querySelector('[data-password-panel]');
+  const passwordForm = document.querySelector('[data-password-form]');
+  const passwordMessage = document.querySelector('[data-password-message]');
+  const passwordSubmit = document.querySelector('[data-password-submit]');
+  const closePasswordButton = document.querySelector('[data-close-password]');
+  const cancelPasswordButton = document.querySelector('[data-cancel-password]');
   const tabButtons = [...document.querySelectorAll('[data-tab]')];
   const panels = [...document.querySelectorAll('[data-panel]')];
   const addCaseButton = document.querySelector('[data-add-case]');
@@ -53,7 +72,9 @@
     selectedFile: null,
     previewUrl: null,
     currentPortraitPath: null,
-    toastTimer: null
+    toastTimer: null,
+    recoveryActive: false,
+    pendingLoginMessage: ''
   };
 
   const setMessage = (node, message = '', success = false) => {
@@ -79,15 +100,50 @@
     button.textContent = busy ? busyText : normalText;
   };
 
+  const selectLoginPanel = (activePanel) => {
+    [loginPanel, resetPanel, recoveryPanel].forEach((panel) => {
+      if (panel) panel.hidden = panel !== activePanel;
+    });
+  };
+
   const showLogin = (message = '') => {
     loginView.hidden = false;
     adminView.hidden = true;
+    if (passwordPanel) passwordPanel.hidden = true;
+    selectLoginPanel(loginPanel);
     setMessage(loginMessage, message);
+    setMessage(resetMessage);
+    setMessage(recoveryMessage);
+  };
+
+  const showResetRequest = () => {
+    loginView.hidden = false;
+    adminView.hidden = true;
+    selectLoginPanel(resetPanel);
+    setMessage(resetMessage);
+    const loginEmail = loginForm.elements.email.value.trim();
+    if (loginEmail) resetForm.elements.email.value = loginEmail;
+    resetForm.elements.email.focus({ preventScroll: true });
+  };
+
+  const showRecovery = (message = '', ready = true) => {
+    loginView.hidden = false;
+    adminView.hidden = true;
+    selectLoginPanel(recoveryPanel);
+    setMessage(recoveryMessage, message);
+    recoverySubmit.disabled = !ready;
+    if (ready) recoveryForm.elements.new_password.focus({ preventScroll: true });
   };
 
   const showAdmin = () => {
+    state.recoveryActive = false;
     loginView.hidden = true;
     adminView.hidden = false;
+  };
+
+  const clearRecoveryUrl = () => {
+    const cleanUrl = new URL('/admin/', window.location.origin);
+    window.history.replaceState(null, '', cleanUrl.href);
   };
 
   const verifyAdmin = async (userId) => {
@@ -100,6 +156,29 @@
     return !error && data?.user_id === userId;
   };
 
+  const activateRecoverySession = async (session) => {
+    if (state.recoveryActive) return true;
+    state.recoveryActive = true;
+
+    if (!session?.user?.id) {
+      state.recoveryActive = false;
+      showRecovery('Ссылка недействительна или устарела. Запросите новое письмо.', false);
+      return false;
+    }
+
+    const allowed = await verifyAdmin(session.user.id);
+    if (!allowed) {
+      state.recoveryActive = false;
+      state.pendingLoginMessage = 'У этой учётной записи нет доступа к управлению сайтом.';
+      await client.auth.signOut();
+      return false;
+    }
+
+    clearRecoveryUrl();
+    showRecovery('', true);
+    return true;
+  };
+
   const activateSession = async (session) => {
     if (!session?.user?.id) {
       showLogin();
@@ -108,14 +187,86 @@
 
     const allowed = await verifyAdmin(session.user.id);
     if (!allowed) {
+      state.pendingLoginMessage = 'У этой учётной записи нет доступа к управлению сайтом.';
       await client.auth.signOut();
-      showLogin('У этой учётной записи нет доступа к управлению сайтом.');
       return false;
     }
 
     showAdmin();
     await Promise.all([loadCases(), loadCurrentPhoto()]);
     return true;
+  };
+
+  const readNewPassword = (form) => {
+    const password = form.elements.new_password.value;
+    const confirmation = form.elements.confirm_password.value;
+
+    if (password.length < 8 || password.length > 200) {
+      throw new Error('Новый пароль должен содержать от 8 до 200 символов.');
+    }
+    if (password !== confirmation) {
+      throw new Error('Пароли не совпадают. Проверьте повторный ввод.');
+    }
+    return password;
+  };
+
+  const closePasswordPanel = () => {
+    passwordPanel.hidden = true;
+    passwordForm.reset();
+    setMessage(passwordMessage);
+  };
+
+  const openPasswordPanel = () => {
+    passwordPanel.hidden = false;
+    passwordForm.reset();
+    setMessage(passwordMessage);
+    passwordForm.elements.new_password.focus({ preventScroll: true });
+    passwordPanel.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start'
+    });
+  };
+
+  const updatePassword = async ({ form, messageNode, submitButton, recovery = false }) => {
+    setMessage(messageNode);
+    let password;
+
+    try {
+      password = readNewPassword(form);
+    } catch (error) {
+      setMessage(messageNode, error.message);
+      return;
+    }
+
+    const currentPassword = recovery ? '' : form.elements.current_password.value;
+    if (!recovery && !currentPassword) {
+      setMessage(messageNode, 'Введите текущий пароль.');
+      return;
+    }
+
+    const attributes = recovery
+      ? { password }
+      : { password, current_password: currentPassword };
+    setButtonBusy(submitButton, true, 'Сохраняем…', 'Сохранить новый пароль');
+    const { error } = await client.auth.updateUser(attributes);
+
+    if (error) {
+      setMessage(messageNode, 'Не удалось изменить пароль. Запросите новую ссылку или попробуйте ещё раз.');
+      setButtonBusy(submitButton, false, 'Сохраняем…', 'Сохранить новый пароль');
+      return;
+    }
+
+    form.reset();
+    setMessage(messageNode, 'Пароль успешно изменён.', true);
+    setButtonBusy(submitButton, false, 'Сохраняем…', 'Сохранить новый пароль');
+
+    if (recovery) {
+      state.pendingLoginMessage = 'Пароль изменён. Войдите с новым паролем.';
+      await client.auth.signOut();
+      return;
+    }
+
+    showToast('Пароль успешно изменён.');
   };
 
   const getSafeHttpsUrl = (value) => {
@@ -458,6 +609,63 @@
     }
   }
 
+  openResetButton.addEventListener('click', showResetRequest);
+  backLoginButton.addEventListener('click', () => showLogin());
+  recoveryLoginButton.addEventListener('click', async () => {
+    state.pendingLoginMessage = '';
+    await client.auth.signOut();
+    showLogin();
+  });
+
+  resetForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const email = resetForm.elements.email.value.trim();
+
+    if (!email || !resetForm.elements.email.checkValidity()) {
+      setMessage(resetMessage, 'Введите корректный e-mail.');
+      return;
+    }
+
+    const redirectUrl = new URL('/admin/', window.location.origin);
+    redirectUrl.searchParams.set('mode', 'recovery');
+    setMessage(resetMessage);
+    setButtonBusy(resetSubmit, true, 'Отправляем…', 'Отправить письмо');
+    const { error } = await client.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl.href
+    });
+
+    if (error) {
+      setMessage(resetMessage, 'Не удалось отправить письмо. Проверьте подключение и попробуйте позже.');
+      setButtonBusy(resetSubmit, false, 'Отправляем…', 'Отправить письмо');
+      return;
+    }
+
+    setMessage(resetMessage, 'Если этот e-mail зарегистрирован, письмо со ссылкой уже отправлено.', true);
+    setButtonBusy(resetSubmit, false, 'Отправляем…', 'Отправить письмо');
+  });
+
+  recoveryForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    await updatePassword({
+      form: recoveryForm,
+      messageNode: recoveryMessage,
+      submitButton: recoverySubmit,
+      recovery: true
+    });
+  });
+
+  openPasswordButton.addEventListener('click', openPasswordPanel);
+  closePasswordButton.addEventListener('click', closePasswordPanel);
+  cancelPasswordButton.addEventListener('click', closePasswordPanel);
+  passwordForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    await updatePassword({
+      form: passwordForm,
+      messageNode: passwordMessage,
+      submitButton: passwordSubmit
+    });
+  });
+
   loginForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const email = loginForm.elements.email.value.trim();
@@ -485,11 +693,12 @@
 
   logoutButton.addEventListener('click', async () => {
     logoutButton.disabled = true;
+    state.pendingLoginMessage = 'Вы вышли из системы.';
     await client.auth.signOut();
     logoutButton.disabled = false;
     closeCaseEditor();
     clearSelectedPhoto();
-    showLogin('Вы вышли из системы.');
+    closePasswordPanel();
   });
 
   tabButtons.forEach((button) => {
@@ -566,12 +775,43 @@
 
   uploadPhotoButton.addEventListener('click', uploadPhoto);
 
-  client.auth.onAuthStateChange((event) => {
-    if (event === 'SIGNED_OUT') showLogin();
+  client.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      window.setTimeout(() => activateRecoverySession(session), 0);
+      return;
+    }
+
+    if (event === 'SIGNED_OUT') {
+      const message = state.pendingLoginMessage;
+      state.pendingLoginMessage = '';
+      state.recoveryActive = false;
+      window.setTimeout(() => showLogin(message), 0);
+    }
   });
 
   (async () => {
+    const currentUrl = new URL(window.location.href);
+    const recoveryTokenInUrl = currentUrl.hash.includes('type=recovery');
+    const recoveryRequested = currentUrl.searchParams.get('mode') === 'recovery'
+      || recoveryTokenInUrl;
     const { data, error } = await client.auth.getSession();
+
+    if (recoveryRequested) {
+      if (recoveryTokenInUrl && !error && data.session) {
+        await activateRecoverySession(data.session);
+        return;
+      }
+
+      showRecovery('Проверяем защищённую ссылку…', false);
+      window.setTimeout(() => {
+        if (!state.recoveryActive) {
+          showRecovery('Ссылка недействительна или устарела. Запросите новое письмо.', false);
+        }
+      }, 2500);
+      return;
+    }
+
+    if (state.recoveryActive) return;
     if (error || !data.session) {
       showLogin();
       return;

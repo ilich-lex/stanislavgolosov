@@ -8,7 +8,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://phflcjspzmyovdplsdze.supabase.co; connect-src 'self' https://phflcjspzmyovdplsdze.supabase.co wss://phflcjspzmyovdplsdze.supabase.co; base-uri 'none'; form-action 'self'; object-src 'none'">
   <title>Управление сайтом — Станислав Голосов</title>
   <link rel="icon" type="image/png" href="../assets/icons/favicon.png">
-  <link rel="stylesheet" href="admin.css?v=1">
+  <link rel="stylesheet" href="admin.css?v=2">
 </head>
 <body>
   <a class="skip-link" href="#admin-main">Перейти к содержанию</a>
@@ -20,22 +20,59 @@
           <span class="admin-brand-mark" aria-hidden="true">СГ</span>
           <span>Юридический кабинет</span>
         </div>
-        <p class="eyebrow">Закрытый раздел</p>
-        <h1>Управление сайтом</h1>
-        <p class="login-intro">Войдите, чтобы обновить судебную практику или фотографию.</p>
+        <div class="login-panel" data-login-panel>
+          <p class="eyebrow">Закрытый раздел</p>
+          <h1>Управление сайтом</h1>
+          <p class="login-intro">Войдите, чтобы обновить судебную практику или фотографию.</p>
 
-        <form class="login-form" data-login-form novalidate>
-          <label>
-            <span>E-mail</span>
-            <input type="email" name="email" autocomplete="username" inputmode="email" maxlength="254" required>
-          </label>
-          <label>
-            <span>Пароль</span>
-            <input type="password" name="password" autocomplete="current-password" minlength="8" maxlength="200" required>
-          </label>
-          <p class="form-message" data-login-message aria-live="polite"></p>
-          <button class="admin-button admin-button-primary" type="submit" data-login-submit>Войти</button>
-        </form>
+          <form class="login-form" data-login-form novalidate>
+            <label>
+              <span>E-mail</span>
+              <input type="email" name="email" autocomplete="username" inputmode="email" maxlength="254" required>
+            </label>
+            <label>
+              <span>Пароль</span>
+              <input type="password" name="password" autocomplete="current-password" minlength="8" maxlength="200" required>
+            </label>
+            <p class="form-message" data-login-message aria-live="polite"></p>
+            <button class="admin-button admin-button-primary" type="submit" data-login-submit>Войти</button>
+          </form>
+          <button class="text-action login-secondary" type="button" data-open-reset>Забыли пароль?</button>
+        </div>
+
+        <div class="login-panel" data-reset-panel hidden>
+          <p class="eyebrow">Восстановление доступа</p>
+          <h1>Получить письмо</h1>
+          <p class="login-intro">Укажите e-mail учётной записи. Supabase отправит защищённую ссылку для создания нового пароля.</p>
+          <form class="login-form" data-reset-form novalidate>
+            <label>
+              <span>E-mail</span>
+              <input type="email" name="email" autocomplete="email" inputmode="email" maxlength="254" required>
+            </label>
+            <p class="form-message" data-reset-message aria-live="polite"></p>
+            <button class="admin-button admin-button-primary" type="submit" data-reset-submit>Отправить письмо</button>
+          </form>
+          <button class="text-action login-secondary" type="button" data-back-login>Вернуться ко входу</button>
+        </div>
+
+        <div class="login-panel" data-recovery-panel hidden>
+          <p class="eyebrow">Новый пароль</p>
+          <h1>Восстановление доступа</h1>
+          <p class="login-intro">Придумайте новый пароль длиной не менее 8 символов.</p>
+          <form class="login-form" data-recovery-form novalidate>
+            <label>
+              <span>Новый пароль</span>
+              <input type="password" name="new_password" autocomplete="new-password" minlength="8" maxlength="200" required>
+            </label>
+            <label>
+              <span>Повторите пароль</span>
+              <input type="password" name="confirm_password" autocomplete="new-password" minlength="8" maxlength="200" required>
+            </label>
+            <p class="form-message" data-recovery-message aria-live="polite"></p>
+            <button class="admin-button admin-button-primary" type="submit" data-recovery-submit>Сохранить новый пароль</button>
+          </form>
+          <button class="text-action login-secondary" type="button" data-recovery-login>Вернуться ко входу</button>
+        </div>
       </div>
     </section>
 
@@ -46,11 +83,46 @@
             <p class="admin-header-label">Управление сайтом</p>
             <p class="admin-header-name">Станислав Голосов</p>
           </div>
-          <button class="admin-button admin-button-quiet" type="button" data-logout>Выйти</button>
+          <div class="admin-header-actions">
+            <button class="admin-button admin-button-quiet" type="button" aria-label="Сменить пароль" data-open-password>
+              <span class="desktop-action-label">Сменить пароль</span><span class="mobile-action-label" aria-hidden="true">Пароль</span>
+            </button>
+            <button class="admin-button admin-button-quiet" type="button" data-logout>Выйти</button>
+          </div>
         </div>
       </header>
 
       <div class="admin-shell admin-content">
+        <section class="password-panel" data-password-panel aria-labelledby="password-heading" hidden>
+          <div class="editor-heading">
+            <div>
+              <p class="eyebrow">Безопасность учётной записи</p>
+              <h2 id="password-heading">Сменить пароль</h2>
+              <p>Введите текущий и новый пароль. Значения передаются напрямую в Supabase Auth и не сохраняются в коде сайта.</p>
+            </div>
+            <button class="icon-button" type="button" data-close-password aria-label="Закрыть смену пароля">×</button>
+          </div>
+          <form class="password-form" data-password-form novalidate>
+            <label class="field password-current">
+              <span>Текущий пароль</span>
+              <input type="password" name="current_password" autocomplete="current-password" maxlength="200" required>
+            </label>
+            <label class="field">
+              <span>Новый пароль</span>
+              <input type="password" name="new_password" autocomplete="new-password" minlength="8" maxlength="200" required>
+            </label>
+            <label class="field">
+              <span>Повторите пароль</span>
+              <input type="password" name="confirm_password" autocomplete="new-password" minlength="8" maxlength="200" required>
+            </label>
+            <p class="form-message" data-password-message aria-live="polite"></p>
+            <div class="form-actions">
+              <button class="admin-button admin-button-primary" type="submit" data-password-submit>Сохранить новый пароль</button>
+              <button class="admin-button admin-button-quiet" type="button" data-cancel-password>Отмена</button>
+            </div>
+          </form>
+        </section>
+
         <nav class="admin-tabs" aria-label="Разделы управления">
           <button type="button" class="admin-tab is-active" data-tab="cases" aria-selected="true">Судебная практика</button>
           <button type="button" class="admin-tab" data-tab="photo" aria-selected="false">Фотография</button>
@@ -153,6 +225,6 @@
 
   <script src="../assets/vendor/supabase-2.112.3.js" defer></script>
   <script src="../cms-config.js?v=1" defer></script>
-  <script src="admin.js?v=1" defer></script>
+  <script src="admin.js?v=2" defer></script>
 </body>
 </html>
