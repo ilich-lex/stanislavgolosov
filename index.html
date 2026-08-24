@@ -76,8 +76,8 @@
 
         <figure class="hero-portrait" data-portrait>
           <picture>
-            <source srcset="assets/images/stanislav-golosov-960.webp 960w, assets/images/stanislav-golosov-1440.webp 1440w" sizes="(max-width: 767px) 92vw, 48vw" type="image/webp">
-            <img src="assets/images/stanislav-golosov-960.webp" width="960" height="1440" alt="Юрист Станислав Голосов" fetchpriority="high">
+            <source data-cms-portrait-source srcset="assets/images/stanislav-golosov-960.webp 960w, assets/images/stanislav-golosov-1440.webp 1440w" sizes="(max-width: 767px) 92vw, 48vw" type="image/webp">
+            <img data-cms-portrait src="assets/images/stanislav-golosov-960.webp" width="960" height="1440" alt="Юрист Станислав Голосов" fetchpriority="high">
           </picture>
           <figcaption><span aria-hidden="true">01</span> Веду работу лично.<br>Остаюсь на связи.</figcaption>
         </figure>
@@ -240,7 +240,8 @@
           </div>
           <p>Каждый номер ведёт в Картотеку арбитражных дел — официальный публичный источник. Здесь нет персональных данных сторон, неподтверждённых результатов и рекламных обещаний.</p>
         </div>
-        <div class="case-list" aria-label="Примеры судебной практики">
+        <p class="case-load-state" data-case-status aria-live="polite" hidden></p>
+        <div class="case-list" aria-label="Примеры судебной практики" data-case-list>
           <a class="case-row" href="https://kad.arbitr.ru/Card/c5ef7333-0191-4671-afa0-a3dc3cf069fd" target="_blank" rel="noopener noreferrer" data-reveal="case">
             <span class="case-index">01 / 05</span><strong>Дело № А38-5075</strong><span class="case-meta"><b>Пример судебной практики</b><small>Картотека арбитражных дел</small></span><i>Открыть карточку дела <span class="arrow-icon arrow-icon--external" aria-hidden="true"></span></i>
           </a>
@@ -256,6 +257,9 @@
           <a class="case-row" href="https://kad.arbitr.ru/Card/050a8315-6b05-431b-a5e9-4367443eb432" target="_blank" rel="noopener noreferrer" data-reveal="case">
             <span class="case-index">05 / 05</span><strong>Дело № А67-2643/2025</strong><span class="case-meta"><b>Пример судебной практики</b><small>Картотека арбитражных дел</small></span><i>Открыть карточку дела <span class="arrow-icon arrow-icon--external" aria-hidden="true"></span></i>
           </a>
+        </div>
+        <div class="case-more-wrap">
+          <button class="button case-more" type="button" data-case-more hidden>Показать ещё</button>
         </div>
         <p class="source-note"><span aria-hidden="true"></span> Источник: <a href="https://kad.arbitr.ru/" target="_blank" rel="noopener noreferrer">kad.arbitr.ru</a></p>
       </div>
@@ -396,6 +400,8 @@
     </div>
   </footer>
 
+  <script src="cms-config.js?v=1" defer></script>
   <script src="script.js?v=3" defer></script>
+  <script src="cms-public.js?v=1" defer></script>
 </body>
 </html>
