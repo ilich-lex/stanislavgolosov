@@ -8,6 +8,7 @@
   const portrait = document.querySelector('[data-cms-portrait]');
   const portraitSource = document.querySelector('[data-cms-portrait-source]');
   const priceList = document.querySelector('[data-price-list]');
+  const bankruptcyPrice = document.querySelector('[data-bankruptcy-price]');
 
   if (!config || !config.supabaseUrl || !config.supabasePublishableKey) return;
 
@@ -282,6 +283,10 @@
       const items = result.data.map(normalizePriceItem).filter(Boolean);
       if (items.length !== result.data.length) throw new Error('Invalid price item');
       priceList.replaceChildren(...items.map(createPriceRow));
+
+      const bankruptcyItem = items.find((item) => item.title.toLocaleLowerCase('ru') === 'банкротство физических лиц')
+        || items.find((item) => item.isFeatured && /банкротств.*физическ/i.test(item.title));
+      if (bankruptcyPrice && bankruptcyItem) bankruptcyPrice.textContent = bankruptcyItem.price;
     } catch {
       // The original HTML price list remains visible when the API is unavailable.
     } finally {
