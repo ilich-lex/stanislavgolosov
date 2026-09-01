@@ -91,6 +91,39 @@
     node.textContent = String(new Date().getFullYear());
   });
 
+  const metrikaGoalsByHost = new Map([
+    ['max.ru', 'click_max'],
+    ['wa.me', 'click_whatsapp'],
+    ['api.whatsapp.com', 'click_whatsapp'],
+    ['whatsapp.com', 'click_whatsapp'],
+    ['www.whatsapp.com', 'click_whatsapp'],
+    ['t.me', 'click_telegram'],
+    ['telegram.me', 'click_telegram'],
+    ['telegram.org', 'click_telegram'],
+    ['www.telegram.org', 'click_telegram'],
+  ]);
+
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest('a[href]');
+    if (!link) return;
+
+    const href = link.getAttribute('href');
+    if (!href) return;
+
+    let goalName = href.toLowerCase().startsWith('tel:') ? 'click_phone' : null;
+    if (!goalName) {
+      try {
+        goalName = metrikaGoalsByHost.get(new URL(href, window.location.href).hostname.toLowerCase()) || null;
+      } catch {
+        return;
+      }
+    }
+
+    if (goalName && typeof window.ym === 'function') {
+      window.ym(112151127, 'reachGoal', goalName);
+    }
+  });
+
   document.querySelectorAll('.faq-list summary').forEach((summary) => {
     const toggleDetails = (event) => {
       event.preventDefault();
